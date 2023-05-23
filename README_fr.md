@@ -18,7 +18,7 @@ Si vous n'avez pas YunoHost, regardez [ici](https://yunohost.org/#/install) pour
 Rport helps you to manage your remote servers without the hassle of VPNs, chained SSH connections, jump-hosts, or the use of commercial tools like TeamViewer and its clones.
 
 
-**Version incluse :** 0.7.0~ynh1
+**Version incluse :** 0.9.12~ynh1
 
 ## Captures d'écran
 
