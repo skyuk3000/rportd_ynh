@@ -18,7 +18,7 @@ If you don't have YunoHost, please consult [the guide](https://yunohost.org/#/in
 Rport helps you to manage your remote servers without the hassle of VPNs, chained SSH connections, jump-hosts, or the use of commercial tools like TeamViewer and its clones.
 
 
-**Shipped version:** 0.7.0~ynh1
+**Shipped version:** 0.9.12~ynh1
 
 ## Screenshots
 
