@@ -1,15 +1,15 @@
 [Unit]
 Description=Create reverse tunnels with ease.
-ConditionFileIsExecutable=__FINALPATH__/bin/rportd
+ConditionFileIsExecutable=__INSTALL_DIR__/bin/rportd
 After=rport-guacd.service
 
 [Service]
 Type=simple
 User=__APP__
 Group=__APP__
-WorkingDirectory=__FINALPATH__/
+WorkingDirectory=__INSTALL_DIR__/
 EnvironmentFile=-/etc/sysconfig/rportd
-ExecStart=__FINALPATH__/bin/rportd "-c" "__FINALPATH__/rportd.conf"
+ExecStart=__INSTALL_DIR__/bin/rportd "-c" "__INSTALL_DIR__/rportd.conf"
 StartLimitInterval=5
 StartLimitBurst=10
 
