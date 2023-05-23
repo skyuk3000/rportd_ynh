@@ -6,31 +6,7 @@
 # IMPORT GENERIC HELPERS
 #=================================================
 
-source _common.sh
 source /usr/share/yunohost/helpers
-
-#=================================================
-# LOAD SETTINGS
-#=================================================
-ynh_script_progression --message="Loading installation settings..."
-
-app=$YNH_APP_INSTANCE_NAME
-
-domain=$(ynh_app_setting_get --app=$app --key=domain)
-path_url=$(ynh_app_setting_get --app=$app --key=path)
-admin=$(ynh_app_setting_get --app=$app --key=admin)
-final_path=$(ynh_app_setting_get --app=$app --key=final_path)
-db_name=$(ynh_app_setting_get --app=$app --key=db_name)
-db_user=$db_name
-db_pwd=$(ynh_app_setting_get --app=$app --key=mysqlpwd)
-datadir=$(ynh_app_setting_get --app=$app --key=datadir)
-client_port=$(ynh_app_setting_get --app=$app --key=client_port)
-used_start_port=$(ynh_app_setting_get --app=$app --key=used_start_port)
-used_end_port=$(ynh_app_setting_get --app=$app --key=used_end_port)
-api_port=$(ynh_app_setting_get --app=$app --key=api_port)
-guacd_port=$(ynh_app_setting_get --app=$app --key=guacd_port)
-key_seed=$(ynh_app_setting_get --app=$app --key=key_seed)
-jwt_secret=$(ynh_app_setting_get --app=$app --key=jwt_secret)
 
 #=================================================
 # CHECK VERSION
@@ -38,21 +14,6 @@ jwt_secret=$(ynh_app_setting_get --app=$app --key=jwt_secret)
 ynh_script_progression --message="Checking version..."
 
 upgrade_type=$(ynh_check_app_version_changed)
-
-#=================================================
-# BACKUP BEFORE UPGRADE THEN ACTIVE TRAP
-#=================================================
-ynh_script_progression --message="Backing up the app before upgrading (may take a while)..."
-
-# Backup the current version of the app
-ynh_backup_before_upgrade
-ynh_clean_setup () {
-	ynh_clean_check_starting
-	# Restore it if the upgrade fails
-	ynh_restore_upgradebackup
-}
-# Exit if an error occurs during the execution of the script
-ynh_abort_if_errors
 
 #=================================================
 # STANDARD UPGRADE STEPS
@@ -72,9 +33,6 @@ ynh_script_progression --message="Ensuring downward compatibility..."
 # CREATE DEDICATED USER
 #=================================================
 ynh_script_progression --message="Making sure dedicated system user exists..."
-
-# Create a dedicated user (if not existing)
-ynh_system_user_create --username=$app --home_dir="$final_path"
 usermod -a -G ssl-cert "$app"
 
 #=================================================
@@ -86,21 +44,19 @@ then
 	ynh_script_progression --message="Upgrading source files..."
 
 	# Download, check integrity, uncompress and patch the source from app.src
-	ynh_setup_source --dest_dir="$final_path/bin" --source_id="$YNH_ARCH"
-	ynh_setup_source --dest_dir="$final_path/frontend" --source_id="frontend"
-	ynh_setup_source --dest_dir="$final_path/novnc" --source_id="novnc"
+	ynh_setup_source --dest_dir="$install_dir/bin" 
+	ynh_setup_source --dest_dir="$install_dir/frontend" --source_id="frontend"
+	ynh_setup_source --dest_dir="$install_dir/novnc" --source_id="novnc"
 fi
 
-chmod 750 "$final_path"
-chmod -R o-rwx "$final_path"
-chown -R $app:www-data "$final_path"
+chmod 750 "$install_dir"
+chmod -R o-rwx "$install_dir"
+chown -R $app:www-data "$install_dir"
 
 #=================================================
 # UPGRADE DEPENDENCIES
 #=================================================
 ynh_script_progression --message="Upgrading dependencies..."
-
-ynh_install_app_dependencies $pkg_dependencies
 
 GUACD_PKG=rport-guacamole_1.4.0_$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')_$(lsb_release --codename --short)_$(uname -m).deb
 GUACD_DOWNLOAD=https://bitbucket.org/cloudradar/rport-guacamole/downloads/${GUACD_PKG}
@@ -109,7 +65,7 @@ pushd "$tempdir"
 	curl -fLOSs "$GUACD_DOWNLOAD" || (throw_error "Download failed" && return 0)
 	DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends install ./"${GUACD_PKG}"
 popd
-ynh_replace_string --match_string="9445" --replace_string="$guacd_port" --target_file="/etc/default/rport-guacamole"
+ynh_replace_string --match_string="9445" --replace_string="$port_guacd" --target_file="/etc/default/rport-guacamole"
 systemctl restart rport-guacd
 ynh_secure_remove --file="$tempdir"
 
@@ -128,10 +84,10 @@ ynh_add_nginx_config
 #=================================================
 ynh_script_progression --message="Updating a configuration file..."
 
-ynh_add_config --template="../conf/rportd.example.conf" --destination="$final_path/rportd.conf"
+ynh_add_config --template="../conf/rportd.example.conf" --destination="$install_dir/rportd.conf"
 
-chmod 400 "$final_path/rportd.conf"
-chown $app:$app "$final_path/rportd.conf"
+chmod 400 "$install_dir/rportd.conf"
+chown $app:$app "$install_dir/rportd.conf"
 
 #=================================================
 # SETUP SYSTEMD
@@ -156,7 +112,7 @@ ynh_use_logrotate --non-append
 #=================================================
 ynh_script_progression --message="Integrating service in YunoHost..."
 
-yunohost service add $app --log="/var/log/$app/$app.log" --needs_exposed_ports="$client_port"
+yunohost service add $app --log="/var/log/$app/$app.log" --needs_exposed_ports="$port_client"
 
 #=================================================
 # START SYSTEMD SERVICE
@@ -164,13 +120,6 @@ yunohost service add $app --log="/var/log/$app/$app.log" --needs_exposed_ports="
 ynh_script_progression --message="Starting a systemd service..."
 
 ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$app/$app.log" --line_match="API Listening on"
-
-#=================================================
-# RELOAD NGINX
-#=================================================
-ynh_script_progression --message="Reloading NGINX web server..."
-
-ynh_systemd_action --service_name=nginx --action=reload
 
 #=================================================
 # END OF SCRIPT
