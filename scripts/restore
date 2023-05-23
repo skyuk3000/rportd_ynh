@@ -7,42 +7,7 @@
 #=================================================
 
 # Keep this path for calling _common.sh inside the execution's context of backup and restore scripts
-source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
-
-#=================================================
-# MANAGE SCRIPT FAILURE
-#=================================================
-
-ynh_clean_setup () {
-	ynh_clean_check_starting
-}
-# Exit if an error occurs during the execution of the script
-ynh_abort_if_errors
-
-#=================================================
-# LOAD SETTINGS
-#=================================================
-ynh_script_progression --message="Loading installation settings..."
-
-app=$YNH_APP_INSTANCE_NAME
-
-domain=$(ynh_app_setting_get --app=$app --key=domain)
-path_url=$(ynh_app_setting_get --app=$app --key=path)
-final_path=$(ynh_app_setting_get --app=$app --key=final_path)
-db_name=$(ynh_app_setting_get --app=$app --key=db_name)
-db_user=$db_name
-datadir=$(ynh_app_setting_get --app=$app --key=datadir)
-guacd_port=$(ynh_app_setting_get --app=$app --key=guacd_port)
-client_port=$(ynh_app_setting_get --app=$app --key=client_port)
-
-#=================================================
-# CHECK IF THE APP CAN BE RESTORED
-#=================================================
-ynh_script_progression --message="Validating restoration parameters..."
-
-test ! -d $final_path \
-	|| ynh_die --message="There is already a directory: $final_path "
 
 #=================================================
 # STANDARD RESTORATION STEPS
@@ -52,7 +17,6 @@ test ! -d $final_path \
 ynh_script_progression --message="Recreating the dedicated system user..."
 
 # Create the dedicated user (if not existing)
-ynh_system_user_create --username=$app --home_dir="$final_path"
 usermod -a -G ssl-cert "$app"
 
 #=================================================
@@ -60,24 +24,24 @@ usermod -a -G ssl-cert "$app"
 #=================================================
 ynh_script_progression --message="Restoring the app main directory..."
 
-ynh_restore_file --origin_path="$final_path"
+ynh_restore_file --origin_path="$install_dir"
 
-chmod 750 "$final_path"
-chmod -R o-rwx "$final_path"
-chown -R $app:www-data "$final_path"
+chmod 750 "$install_dir"
+chmod -R o-rwx "$install_dir"
+chown -R $app:www-data "$install_dir"
 
 #=================================================
 # RESTORE THE DATA DIRECTORY
 #=================================================
 ynh_script_progression --message="Restoring the data directory..."
 
-ynh_restore_file --origin_path="$datadir" --not_mandatory
+ynh_restore_file --origin_path="$data_dir" --not_mandatory
 
-mkdir -p $datadir
+mkdir -p $data_dir
 
-chmod 750 "$datadir"
-chmod -R o-rwx "$datadir"
-chown -R $app:www-data "$datadir"
+chmod 750 "$data_dir"
+chmod -R o-rwx "$data_dir"
+chown -R $app:www-data "$data_dir"
 
 #=================================================
 # SPECIFIC RESTORATION
@@ -87,7 +51,6 @@ chown -R $app:www-data "$datadir"
 ynh_script_progression --message="Reinstalling dependencies..."
 
 # Define and install dependencies
-ynh_install_app_dependencies $pkg_dependencies
 
 GUACD_PKG=rport-guacamole_1.4.0_$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')_$(lsb_release --codename --short)_$(uname -m).deb
 GUACD_DOWNLOAD=https://bitbucket.org/cloudradar/rport-guacamole/downloads/${GUACD_PKG}
@@ -96,7 +59,7 @@ pushd "$tempdir"
 	curl -fLOSs "$GUACD_DOWNLOAD" || (throw_error "Download failed" && return 0)
 	DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends install ./"${GUACD_PKG}"
 popd
-ynh_replace_string --match_string="9445" --replace_string="$guacd_port" --target_file="/etc/default/rport-guacamole"
+ynh_replace_string --match_string="9445" --replace_string="$port_guacd" --target_file="/etc/default/rport-guacamole"
 systemctl restart rport-guacd
 ynh_secure_remove --file="$tempdir"
 
@@ -108,22 +71,13 @@ ynh_script_progression --message="Restoring the NGINX web server configuration..
 ynh_restore_file --origin_path="/etc/nginx/conf.d/$domain.d/$app.conf"
 
 #=================================================
-# RESTORE THE MYSQL DATABASE
-#=================================================
-ynh_script_progression --message="Restoring the MySQL database..."
-
-db_pwd=$(ynh_app_setting_get --app=$app --key=mysqlpwd)
-ynh_mysql_setup_db --db_user=$db_user --db_name=$db_name --db_pwd=$db_pwd
-ynh_mysql_connect_as --user=$db_user --password=$db_pwd --database=$db_name < ./db.sql
-
-#=================================================
 # OPEN A PORT
 #=================================================
 ynh_script_progression --message="Opening a port..."
 
 # Open the port
 ynh_script_progression --message="Configuring firewall..."
-ynh_exec_warn_less yunohost firewall allow --no-upnp TCP $client_port
+ynh_exec_warn_less yunohost firewall allow --no-upnp TCP $port_client
 
 #=================================================
 # RESTORE SYSTEMD
@@ -148,7 +102,7 @@ ynh_restore_file --origin_path="/etc/logrotate.d/$app"
 #=================================================
 ynh_script_progression --message="Integrating service in YunoHost..."
 
-yunohost service add $app --log="/var/log/$app/$app.log" --needs_exposed_ports="$client_port"
+yunohost service add $app --log="/var/log/$app/$app.log" --needs_exposed_ports="$port_client"
 
 #=================================================
 # START SYSTEMD SERVICE
