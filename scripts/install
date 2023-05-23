@@ -40,8 +40,9 @@ ynh_exec_warn_less yunohost firewall allow TCP $port_used_start:$port_used_end
 #=================================================
 ynh_script_progression --message="Installing dependencies..."
 
-GUACD_PKG=rport-guacamole_1.5.0_$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')_$(lsb_release --codename --short)_$(uname -m).deb
-GUACD_DOWNLOAD=https://bitbucket.org/cloudradar/rport-guacamole/downloads/${GUACD_PKG}
+GUACD_version=1.5.0
+GUACD_PKG=rport-guacamole_${GUACD_version}_$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')_$(lsb_release --codename --short)_$(uname -m).deb
+GUACD_DOWNLOAD=https://github.com/realvnc-labs/rport-guacamole/releases/download/${GUACD_version}/${GUACD_PKG}
 tempdir="$(mktemp -d)"
 pushd "$tempdir"
 	curl -fLOSs "$GUACD_DOWNLOAD" || (throw_error "Download failed" && return 0)
