@@ -58,7 +58,7 @@ chown -R $app:www-data "$install_dir"
 #=================================================
 ynh_script_progression --message="Upgrading dependencies..."
 
-GUACD_PKG=rport-guacamole_1.4.0_$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')_$(lsb_release --codename --short)_$(uname -m).deb
+GUACD_PKG=rport-guacamole_1.5.0_$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')_$(lsb_release --codename --short)_$(uname -m).deb
 GUACD_DOWNLOAD=https://bitbucket.org/cloudradar/rport-guacamole/downloads/${GUACD_PKG}
 tempdir="$(mktemp -d)"
 pushd "$tempdir"
