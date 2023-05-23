@@ -1,0 +1,93 @@
+packaging_format = 2
+
+id = "rportd"
+name = "Rportd"
+description.en = "Manage your remote servers"
+
+version = "0.9.12~ynh1"
+
+maintainers = [""]
+
+[upstream]
+license = "MIT"
+website = "https://rport.io/"
+admindoc = "https://kb.rport.io/"
+code = "https://github.com/cloudradar-monitoring/rport"
+
+[integration]
+yunohost = ">= 11.1.11"
+architectures = ["amd64", "arm64", "armhf"]
+multi_instance = false
+ldap = "false"
+sso = "false" 
+disk = "50M"
+ram.build = "300M"
+ram.runtime = "50M"
+
+[install]
+    [install.domain]
+    # this is a generic question - ask strings are automatically handled by Yunohost's core
+    type = "domain"
+    full_domain = true
+
+    [install.admin]
+    # this is a generic question - ask strings are automatically handled by Yunohost's core
+    type = "user"
+
+    [install.password]
+    # this is a generic question - ask strings are automatically handled by Yunohost's core
+    type = "password"
+
+[resources]
+    [resources.system_user]
+
+    [resources.install_dir]
+
+    [resources.data_dir]
+
+    [resources.permissions]
+    main.url = "/"
+    main.allowed = ["visitors", "all_users"]
+    
+    api.url = "/api/*" #fixes the 2fa url
+    api.show_tile = false
+    api.protected= true
+    api.allowed = ["visitors", "all_users"]
+
+[resources.sources]
+    [resources.sources.main]
+    in_subdir = false
+    amd64.url = "https://github.com/cloudradar-monitoring/rport/releases/download/0.9.12/rportd_0.9.12_Linux_x86_64.tar.gz"
+    amd64.sha256 = "ec76cd560d718844e4b529f94f0f063ac2fd26584433aa3429fb505c9cf16774"
+    arm64.url = "https://github.com/cloudradar-monitoring/rport/releases/download/0.9.12/rportd_0.9.12_Linux_aarch64.tar.gz"
+    arm64.sha256 = "0fdf5ef38a2c3366ec0f041d725df9ac5a9eb3f04b8a66213b837775c67ba9b5"
+    armhf.url = "https://github.com/cloudradar-monitoring/rport/releases/download/0.9.12/rportd_0.9.12_Linux_armv7l.tar.gz"
+    armhf.sha256 = "255db5fb7b7baca47c0348ca057a5e18f0d73f3f8a19b28dae78a978ad87bc44"
+    
+    [resources.sources.frontend]
+    url = "https://downloads.rport.io/frontend/stable/rport-frontend-0.9.12-3-build-1131.zip"
+    sha256 = "f2fd4ff3db03579c312c2465b2bd11144466cea0bb767cfe02279286688c3f93"
+    format = "zip"
+    in_subdir = false
+    prefetch = false
+    
+    [resources.sources.novnc]
+    url = "https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.zip"
+    sha256 = "a2a3ebf0fda920339aebde719e9945e81524d46e00bdd59fdce32df9ceb9ac49"
+    format = "zip"
+    prefetch = false
+
+    [resources.ports]
+    client.default = 8098
+    client.expose = "TCP"
+    
+    api.default = 8099
+    guacd.default = 8100
+    used_start.default = 20000
+    used_end.default = 30000
+
+    [resources.apt]
+    packages = "pwgen, apache2-utils, unzip, curl, sqlite3, netcat"
+
+    [resources.database]
+    type = "mysql"
