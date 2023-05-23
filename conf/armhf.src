@@ -1,7 +1,0 @@
-SOURCE_URL=https://github.com/cloudradar-monitoring/rport/releases/download/0.7.0/rportd_0.7.0_Linux_armv7l.tar.gz
-SOURCE_SUM=a3968ed81b83ef9f9452b1048040f5aa894710e069ef551ecfa43db60101d100
-SOURCE_SUM_PRG=sha256sum
-SOURCE_FORMAT=tar.gz
-SOURCE_IN_SUBDIR=false
-SOURCE_FILENAME=
-SOURCE_EXTRACT=true
