@@ -65,8 +65,8 @@ ram.runtime = "50M"
     armhf.sha256 = "255db5fb7b7baca47c0348ca057a5e18f0d73f3f8a19b28dae78a978ad87bc44"
     
     [resources.sources.frontend]
-    url = "https://downloads.rport.io/frontend/stable/rport-frontend-0.9.12-3-build-1131.zip"
-    sha256 = "f2fd4ff3db03579c312c2465b2bd11144466cea0bb767cfe02279286688c3f93"
+    url = "https://downloads.rport.io/frontend/stable/rport-frontend-0.9.12-6-build-1134.zip"
+    #sha256 = "f2fd4ff3db03579c312c2465b2bd11144466cea0bb767cfe02279286688c3f93"
     format = "zip"
     in_subdir = false
     prefetch = false
