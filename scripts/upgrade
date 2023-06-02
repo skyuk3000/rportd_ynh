@@ -20,6 +20,10 @@ language=$(ynh_app_setting_get --app=$app --key=language)
 admin=$(ynh_app_setting_get --app=$app --key=admin)
 final_path=$(ynh_app_setting_get --app=$app --key=final_path)
 db_name=$(ynh_app_setting_get --app=$app --key=db_name)
+db_user=$db_name
+db_pwd=$(ynh_app_setting_get --app=$app --key=mysqlpwd)
+password=$(ynh_app_setting_get --app=$app --key=password)
+database=$(ynh_app_setting_get --app=$app --key=database)
 
 #=================================================
 # CHECK VERSION
@@ -49,13 +53,24 @@ ynh_abort_if_errors
 #=================================================
 ynh_script_progression --message="Ensuring downward compatibility..." --weight=1
 
+# If final_path doesn't exist, create it
+if [ -z "$final_path" ]; then
+	final_path=/var/www/$app
+	ynh_app_setting_set --app=$app --key=final_path --value=$final_path
+fi
+
+# If db_name doesn't exist, create it
+if [ -z "$db_name" ]; then
+	db_name=$(ynh_sanitize_dbid --db_name=$app)
+	ynh_app_setting_set --app=$app --key=db_name --value=$db_name
+fi
+
 # Cleaning legacy permissions
 if ynh_legacy_permissions_exists; then
 	ynh_legacy_permissions_delete_all
 
 	ynh_app_setting_delete --app=$app --key=is_public
 fi
-
 #=================================================
 # CREATE DEDICATED USER
 #=================================================
@@ -67,7 +82,6 @@ ynh_system_user_create --username=$app --home_dir="$final_path"
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
 #=================================================
-
 if [ "$upgrade_type" == "UPGRADE_APP" ]
 then
 	ynh_script_progression --message="Upgrading source files..."
@@ -100,12 +114,39 @@ systemctl restart rport-guacd
 ynh_secure_remove --file="$tempdir"
 
 #=================================================
-# NGINX CONFIGURATION
+# SPECIFIC SETUP
 #=================================================
-ynh_script_progression --message="Upgrading NGINX web server configuration..." --weight=1
+# POPULATE DATABASE
+#=================================================
+ynh_script_progression --message="Populating database..."
 
-# Create a dedicated NGINX config
-ynh_add_nginx_config
+password_hash=$(htpasswd -nbB password "$password"|cut -d: -f2)
+ynh_add_config --template="../conf/mysql.sql" --destination="../conf/populated_mysql.sql"
+ynh_mysql_connect_as --user=$db_user --password=$db_pwd --database=$db_name < "../conf/populated_mysql.sql"
+
+#=================================================
+# CREATE DATA DIRECTORY
+#=================================================
+ynh_script_progression --message="Creating a data directory..."
+
+datadir=/home/yunohost.app/$app
+ynh_app_setting_set --app=$app --key=datadir --value=$datadir
+
+mkdir -p $datadir
+
+chmod 750 "$datadir"
+chmod -R o-rwx "$datadir"
+chown -R $app:www-data "$datadir"
+
+#=================================================
+# ADD A CONFIGURATION
+#=================================================
+ynh_script_progression --message="Adding a configuration file..."
+
+ynh_add_config --template="../conf/rportd.example.conf" --destination="$final_path/rportd.conf"
+
+chmod 400 "$final_path/rportd.conf"
+chown $app:$app "$final_path/rportd.conf"
 
 #=================================================
 # GENERIC FINALIZATION
@@ -116,6 +157,14 @@ ynh_script_progression --message="Upgrading logrotate configuration..."
 
 # Use logrotate to manage app-specific logfile(s)
 ynh_use_logrotate --non-append
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Upgrading NGINX web server configuration..." --weight=1
+
+# Create a dedicated NGINX config
+ynh_add_nginx_config
 
 #=================================================
 # INTEGRATE SERVICE IN YUNOHOST
@@ -134,5 +183,4 @@ ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$ap
 #=================================================
 # END OF SCRIPT
 #=================================================
-
 ynh_script_progression --message="Upgrade of $app completed"
