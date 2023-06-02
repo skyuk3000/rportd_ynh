@@ -49,10 +49,11 @@ ram.runtime = "50M"
     main.url = "/"
     main.allowed = ["visitors", "all_users"]
     
-    api.url = "/api/*" #fixes the 2fa url
+    api.url = "/api/*"
     api.show_tile = false
     api.protected= true
     api.allowed = ["visitors", "all_users"]
+    api.auth_header = false
 
 [resources.sources]
     [resources.sources.main]
