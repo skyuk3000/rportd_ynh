@@ -25,6 +25,8 @@ db_pwd=$(ynh_app_setting_get --app=$app --key=mysqlpwd)
 password=$(ynh_app_setting_get --app=$app --key=password)
 database=$(ynh_app_setting_get --app=$app --key=database)
 admin_mail="$(ynh_user_get_info --username=$admin --key=mail)"
+key_seed=$(ynh_string_random --length=18 | xxd -p | head -n1 | cut -c 1-18)
+jwt_secret=$(ynh_string_random --length=9 | xxd -p | head -n1 | cut -c 1-9)
 
 #=================================================
 # CHECK VERSION
@@ -123,7 +125,7 @@ ynh_script_progression --message="Populating database..."
 
 password_hash=$(htpasswd -nbB password "$password"|cut -d: -f2)
 ynh_add_config --template="../conf/mysql.sql" --destination="../conf/populated_mysql.sql"
-ynh_mysql_connect_as --user=$db_user --password=$db_pwd --database=$db_name < "../conf/populated_mysql.sql"
+#ynh_mysql_connect_as --user=$db_user --password=$db_pwd --database=$db_name < "../conf/populated_mysql.sql"
 
 #=================================================
 # CREATE DATA DIRECTORY
