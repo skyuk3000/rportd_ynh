@@ -64,6 +64,13 @@ systemctl restart rport-guacd
 ynh_secure_remove --file="$tempdir"
 
 #=================================================
+# RESTORE THE MySQL DATABASE
+#=================================================
+ynh_script_progression --message="Restoring the MySQL database..." --weight=6
+
+ynh_mysql_execute_file_as_root --file="./db.sql" --database=$db_name
+
+#=================================================
 # RESTORE THE NGINX CONFIGURATION
 #=================================================
 ynh_script_progression --message="Restoring the NGINX web server configuration..."
